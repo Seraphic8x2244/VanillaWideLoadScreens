@@ -22,10 +22,15 @@ jobs:
       - name: Build x86 DLL
         shell: cmd
         run: |
-          call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars32.bat"
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSROOT=%%i"
+          if not defined VSROOT exit /b 1
+          call "%VSROOT%\VC\Auxiliary\Build\vcvars32.bat"
+          if errorlevel 1 exit /b 1
           if not exist dist mkdir dist
           cl /nologo /O2 /W4 /LD /MT /GS- src\WideLoadScreens.c /link /OUT:dist\WideLoadScreens.dll
+          if errorlevel 1 exit /b 1
           dumpbin /headers dist\WideLoadScreens.dll | findstr /C:"14C machine (x86)"
+          if errorlevel 1 exit /b 1
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
